@@ -1,1 +1,2 @@
-/deploy/models/*  
+/deploy/models/* 
+**/*/__pycache__ 
