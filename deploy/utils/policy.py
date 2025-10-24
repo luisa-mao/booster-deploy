@@ -39,16 +39,17 @@ class Policy:
         clip_range = (-self.policy_interval, self.policy_interval)
         self.smoothed_commands += np.clip(self.commands - self.smoothed_commands, *clip_range)
 
-        if np.linalg.norm(self.smoothed_commands) < 1e-5:
-            self.gait_frequency = 0.0
-        else:
-            self.gait_frequency = self.cfg["policy"]["gait_frequency"]
+        # if np.linalg.norm(self.smoothed_commands) < 1e-5:
+        #     self.gait_frequency = 0.0
+        #else:
+        self.gait_frequency = self.cfg["policy"]["gait_frequency"]
 
+        print("xyz:", self.smoothed_commands[0:3])
         self.obs[0:3] = projected_gravity * self.cfg["policy"]["normalization"]["gravity"]
         self.obs[3:6] = base_ang_vel * self.cfg["policy"]["normalization"]["ang_vel"]
         self.obs[6] = (
             self.smoothed_commands[0] * self.cfg["policy"]["normalization"]["lin_vel"] * (self.gait_frequency > 1.0e-8)
-        )
+            )
         self.obs[7] = (
             self.smoothed_commands[1] * self.cfg["policy"]["normalization"]["lin_vel"] * (self.gait_frequency > 1.0e-8)
         )
