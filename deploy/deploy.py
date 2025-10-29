@@ -78,7 +78,7 @@ class Controller(Node):
             # ros stuff
             self._ball_sub = self.create_subscription(
                         Point,
-                        "/brain/ball_to_robot",
+                        "/apriltag/pose",
                         self._ball_callback,
                         10
                     )
@@ -88,6 +88,7 @@ class Controller(Node):
 
     def _ball_callback(self, ball_msg: Point):
         self.ball_pos[:2] = np.array([ball_msg.x, ball_msg.y], dtype=np.float32)
+        print("ball message", ball_msg)
 
     def _low_state_handler(self, low_state_msg: LowState):
         if abs(low_state_msg.imu_state.rpy[0]) > 1.0 or abs(low_state_msg.imu_state.rpy[1]) > 1.0:
@@ -174,6 +175,8 @@ class Controller(Node):
             vx=self.remoteControlService.get_vx_cmd(),
             vy=self.remoteControlService.get_vy_cmd(),
             vyaw=self.remoteControlService.get_vyaw_cmd(),
+            target_x = self.ball_pos[0],
+            target_y = self.ball_pos[1],
         )
 
         inference_time = time.perf_counter()

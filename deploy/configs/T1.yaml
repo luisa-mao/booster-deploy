@@ -34,7 +34,7 @@ common:
   ]
 
 policy:
-  policy_path: "./models/follow_cmd_terrain_no_smooth_yaw.pt"
+  policy_path: "./models/target_position.pt"
   num_actions: 12
   num_observations: 47
   gait_frequency: 1.0
