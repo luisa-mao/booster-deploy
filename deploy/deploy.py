@@ -222,6 +222,10 @@ class Controller(Node):
 
 
 if __name__ == "__main__":
+    import argparse
+    import signal
+    import sys
+    import os
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, type=str, help="Name of the configuration file.")
     parser.add_argument("--net", type=str, default="127.0.0.1", help="Network interface for SDK communication.")
