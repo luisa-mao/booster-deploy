@@ -17,7 +17,7 @@ class Policy:
         return self.policy_interval
 
     def _init_inference_variables(self):
-        self.joint_inds = np.array(self.cfg["common"]["joint_indices"], dtype=np.int32) if self.cfg["common"]["joint_indices"] else np.array([11,12,13,14,15,16,17,18,19,20,21,22], dtype=np.int32)
+        self.joint_inds = np.array(self.cfg["common"]["joint_indices"], dtype=np.int32) if self.cfg["common"].get("joint_indices") else np.array([11,12,13,14,15,16,17,18,19,20,21,22], dtype=np.int32)
         self.default_dof_pos = np.array(self.cfg["common"]["default_qpos"], dtype=np.float32)
         self.stiffness = np.array(self.cfg["common"]["stiffness"], dtype=np.float32)
         self.damping = np.array(self.cfg["common"]["damping"], dtype=np.float32)

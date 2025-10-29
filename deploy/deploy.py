@@ -29,6 +29,7 @@ from geometry_msgs.msg import Point, PoseStamped
 
 class Controller(Node):
     def __init__(self, cfg_file) -> None:
+        super().__init__('controller') 
         # Setup logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
@@ -221,17 +222,6 @@ class Controller(Node):
 
 
 if __name__ == "__main__":
-    import argparse
-    import signal
-    import sys
-    import os
-
-    def signal_handler(sig, frame):
-        print("\nShutting down...")
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, type=str, help="Name of the configuration file.")
     parser.add_argument("--net", type=str, default="127.0.0.1", help="Network interface for SDK communication.")
@@ -241,16 +231,29 @@ if __name__ == "__main__":
     print(f"Starting custom controller, connecting to {args.net} ...")
     ChannelFactory.Instance().Init(0, args.net)
 
-    with Controller(cfg_file) as controller:
-        time.sleep(2)  # Wait for channels to initialize
+    # 1️⃣ Initialize ROS 2
+    rclpy.init()
+
+    try:
+        controller = Controller(cfg_file)
+        time.sleep(2)
         print("Initialization complete.")
         controller.start_custom_mode_conditionally()
         controller.start_rl_gait_conditionally()
 
-        try:
-            while controller.running:
-                controller.run()
-            controller.client.ChangeMode(RobotMode.kDamping)
-        except KeyboardInterrupt:
-            print("\nKeyboard interrupt received. Cleaning up...")
-            controller.cleanup()
+        # 2️⃣ Spin the node (so subscriptions/timers actually run)
+        executor = MultiThreadedExecutor()
+        executor.add_node(controller)
+
+        while controller.running and rclpy.ok():
+            controller.run()
+            executor.spin_once(timeout_sec=0.1)
+
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt received. Cleaning up...")
+        controller.cleanup()
+
+    finally:
+        # 3️⃣ Proper shutdown
+        controller.destroy_node()
+        rclpy.shutdown()
