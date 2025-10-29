@@ -17,6 +17,7 @@ class Policy:
         return self.policy_interval
 
     def _init_inference_variables(self):
+        self.joint_inds = np.array(self.cfg["common"]["joint_indices"], dtype=np.int32) if self.cfg["common"]["joint_indices"] else np.array([11,12,13,14,15,16,17,18,19,20,21,22], dtype=np.int32)
         self.default_dof_pos = np.array(self.cfg["common"]["default_qpos"], dtype=np.float32)
         self.stiffness = np.array(self.cfg["common"]["stiffness"], dtype=np.float32)
         self.damping = np.array(self.cfg["common"]["damping"], dtype=np.float32)
@@ -44,6 +45,8 @@ class Policy:
         #else:
         self.gait_frequency = self.cfg["policy"]["gait_frequency"]
 
+        n = self.joint_inds.shape[0]
+
         print("xyz:", self.smoothed_commands[0:3])
         self.obs[0:3] = projected_gravity * self.cfg["policy"]["normalization"]["gravity"]
         self.obs[3:6] = base_ang_vel * self.cfg["policy"]["normalization"]["ang_vel"]
@@ -58,9 +61,9 @@ class Policy:
         )
         self.obs[9] = np.cos(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
         self.obs[10] = np.sin(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
-        self.obs[11:23] = (dof_pos - self.default_dof_pos)[11:] * self.cfg["policy"]["normalization"]["dof_pos"]
-        self.obs[23:35] = dof_vel[11:] * self.cfg["policy"]["normalization"]["dof_vel"]
-        self.obs[35:47] = self.actions
+        self.obs[11:11+n] = (dof_pos - self.default_dof_pos)[self.joint_inds] * self.cfg["policy"]["normalization"]["dof_pos"]
+        self.obs[11+n:11+2*n] = dof_vel[self.joint_inds] * self.cfg["policy"]["normalization"]["dof_vel"]
+        self.obs[11+2*n:] = self.actions
 
         self.actions[:] = self.policy(torch.from_numpy(self.obs).unsqueeze(0)).detach().numpy()
         self.actions[:] = np.clip(
@@ -69,6 +72,6 @@ class Policy:
             self.cfg["policy"]["normalization"]["clip_actions"],
         )
         self.dof_targets[:] = self.default_dof_pos
-        self.dof_targets[11:] += self.cfg["policy"]["control"]["action_scale"] * self.actions
+        self.dof_targets[self.joint_inds] += self.cfg["policy"]["control"]["action_scale"] * self.actions
 
         return self.dof_targets

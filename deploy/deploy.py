@@ -21,8 +21,13 @@ from utils.rotate import rotate_vector_inverse_rpy
 from utils.timer import TimerConfig, Timer
 from utils.policy import Policy
 
+# ros stuff
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import Point, PoseStamped
 
-class Controller:
+
+class Controller(Node):
     def __init__(self, cfg_file) -> None:
         # Setup logging
         logging.basicConfig(level=logging.INFO)
@@ -69,9 +74,20 @@ class Controller:
             self.low_state_subscriber.InitChannel()
             self.low_cmd_publisher.InitChannel()
             self.client.Init()
+
+            # ros stuff
+            self._ball_sub = self.create_subscription(
+                        Point,
+                        "/brain/ball_to_robot",
+                        self._ball_callback,
+                        10
+                    )
         except Exception as e:
             self.logger.error(f"Failed to initialize communication: {e}")
             raise
+
+    def _ball_callback(self, ball_msg: Point):
+        self.ball_pos[:2] = np.array([ball_msg.x, ball_msg.y], dtype=np.float32)
 
     def _low_state_handler(self, low_state_msg: LowState):
         if abs(low_state_msg.imu_state.rpy[0]) > 1.0 or abs(low_state_msg.imu_state.rpy[1]) > 1.0:
