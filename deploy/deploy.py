@@ -79,7 +79,7 @@ class Controller(Node):
             # ros stuff
             self._ball_sub = self.create_subscription(
                         Point,
-                        "/apriltag/pose",
+                        "/apriltag/info",
                         self._ball_callback,
                         10
                     )
@@ -88,8 +88,12 @@ class Controller(Node):
             raise
 
     def _ball_callback(self, ball_msg: Point):
-        self.ball_pos[:2] = np.array([ball_msg.x, ball_msg.y], dtype=np.float32)
-        print("ball message", ball_msg)
+        try:
+            self.ball_pos[:2] = np.array([ball_msg.x, ball_msg.y], dtype=np.float32)
+            print("ball message", ball_msg)
+            self.logger.info(f"Received ball position: x={ball_msg.x:.3f}, y={ball_msg.y:.3f}, z={ball_msg.z:.3f}")
+        except Exception as e:
+            self.logger.error(f"Failed to process ball message: {e}")
 
     def _low_state_handler(self, low_state_msg: LowState):
         if abs(low_state_msg.imu_state.rpy[0]) > 1.0 or abs(low_state_msg.imu_state.rpy[1]) > 1.0:
