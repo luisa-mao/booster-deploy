@@ -33,6 +33,7 @@ class Controller(Node):
         # Setup logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
+        self.ball_pos = np.zeros(2, dtype=np.float32)
 
         # Load config
         with open(cfg_file, "r", encoding="utf-8") as f:
@@ -242,26 +243,26 @@ if __name__ == "__main__":
     # 1️⃣ Initialize ROS 2
     rclpy.init()
 
-    # try:
-    #     controller = Controller(cfg_file)
-    #     time.sleep(2)
-    #     print("Initialization complete.")
-    #     controller.start_custom_mode_conditionally()
-    #     controller.start_rl_gait_conditionally()
+    try:
+        controller = Controller(cfg_file)
+        time.sleep(2)
+        print("Initialization complete.")
+        controller.start_custom_mode_conditionally()
+        controller.start_rl_gait_conditionally()
 
-    #     # 2️⃣ Spin the node (so subscriptions/timers actually run)
-    #     executor = MultiThreadedExecutor()
-    #     executor.add_node(controller)
+        # 2️⃣ Spin the node (so subscriptions/timers actually run)
+        executor = MultiThreadedExecutor()
+        executor.add_node(controller)
 
-    #     while controller.running and rclpy.ok():
-    #         controller.run()
-    #         executor.spin_once(timeout_sec=0.1)
+        while controller.running and rclpy.ok():
+            controller.run()
+            executor.spin_once(timeout_sec=0.1)
 
 
-    # finally:
-    #     # 3️⃣ Proper shutdown
-    #     controller.destroy_node()
-    #     rclpy.shutdown()
+    finally:
+        # 3️⃣ Proper shutdown
+        controller.destroy_node()
+        rclpy.shutdown()
 
 
 
@@ -285,12 +286,12 @@ if __name__ == "__main__":
     #     print("\nKeyboard interrupt received. Cleaning up...")
     #     controller.cleanup()
 
-    node = Controller(cfg_file)
+    # node = Controller(cfg_file)
 
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    # try:
+    #     rclpy.spin(node)
+    # except KeyboardInterrupt:
+    #     pass
+    # finally:
+    #     node.destroy_node()
+    #     rclpy.shutdown()
