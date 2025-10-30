@@ -34,7 +34,8 @@ class Controller(Node):
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
         self.ball_pos = np.zeros(2, dtype=np.float32)
-
+        self.running = True
+        self.rl_gait = False
         # Load config
         with open(cfg_file, "r", encoding="utf-8") as f:
             self.cfg = yaml.load(f.read(), Loader=yaml.FullLoader)
@@ -47,7 +48,6 @@ class Controller(Node):
         self._init_low_state_values()
         self._init_communication()
         self.publish_runner = None
-        self.running = True
 
         self.publish_lock = threading.Lock()
 
@@ -166,6 +166,7 @@ class Controller(Node):
         # self.publish_runner.daemon = True
         # self.publish_runner.start()
         print(f"{self.remoteControlService.get_operation_hint()}")
+        self.rl_gait = True
 
     def run(self):
         time_now = self.timer.get_time()
@@ -193,13 +194,17 @@ class Controller(Node):
         )
 
         inference_time = time.perf_counter()
-        self.logger.debug(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
-        print(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
+        self.logger.debug(f"Inference took {(inference_time - start_time)*1001:.4f} ms")
+        # print(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
         time.sleep(0.001)
 
-    def _publish_cmd(self):
+    def _publish_cmd(self, low_state_msg: LowState):
         # while self.running:
-        if not self.running:
+       #  return
+        # breakpoint()
+        if not self.running or not self.rl_gait:
+            return
+        if len(self.low_cmd.motor_cmd) == 0:
             return
         time_now = self.timer.get_time()
         if time_now < self.next_publish_time:
@@ -232,7 +237,7 @@ class Controller(Node):
         start_time = time.perf_counter()
         self._send_cmd(self.low_cmd)
         publish_time = time.perf_counter()
-        print(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
+        # print(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
         self.logger.debug(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
         time.sleep(0.001)
 
@@ -308,7 +313,7 @@ if __name__ == "__main__":
     # try:
     #     rclpy.spin(node)
     # except KeyboardInterrupt:
-    #     pass
+    #     pass  
     # finally:
     #     node.destroy_node()
     #     rclpy.shutdown()

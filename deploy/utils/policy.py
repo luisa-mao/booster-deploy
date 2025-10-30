@@ -75,5 +75,6 @@ class Policy:
         )
         self.dof_targets[:] = self.default_dof_pos
         self.dof_targets[self.joint_inds] += self.cfg["policy"]["control"]["action_scale"] * self.actions
-
+        # print("obs", self.obs)
+        # print("actions", self.actions)
         return self.dof_targets

@@ -2,6 +2,7 @@ from booster_robotics_sdk_python import LowCmd, LowCmdType, MotorCmd, B1JointCnt
 
 
 def init_Cmd_T1(low_cmd: LowCmd):
+    # breakpoint()
     low_cmd.cmd_type = LowCmdType.SERIAL
     motorCmds = [MotorCmd() for _ in range(B1JointCnt)]
     low_cmd.motor_cmd = motorCmds
