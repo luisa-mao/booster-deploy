@@ -98,6 +98,7 @@ class Controller(Node):
             self.logger.error(f"Failed to process ball message: {e}")
 
     def _low_state_handler(self, low_state_msg: LowState):
+        print("Low state message received")
         if abs(low_state_msg.imu_state.rpy[0]) > 1.0 or abs(low_state_msg.imu_state.rpy[1]) > 1.0:
             self.logger.warning("IMU base rpy values are too large: {}".format(low_state_msg.imu_state.rpy))
             self.running = False
@@ -171,8 +172,10 @@ class Controller(Node):
             time.sleep(0.001)
             return
         self.logger.debug("-----------------------------------------------------")
+        print("-----------------------------------------------------")
         self.next_inference_time += self.policy.get_policy_interval()
         self.logger.debug(f"Next start time: {self.next_inference_time}")
+        print(f"Next start time: {self.next_inference_time}")
         start_time = time.perf_counter()
 
         self.dof_target[:] = self.policy.inference(
@@ -190,6 +193,7 @@ class Controller(Node):
 
         inference_time = time.perf_counter()
         self.logger.debug(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
+        print(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
         time.sleep(0.001)
 
     def _publish_cmd(self):
@@ -202,6 +206,7 @@ class Controller(Node):
             continue
         self.next_publish_time += self.cfg["common"]["dt"]
         self.logger.debug(f"Next publish time: {self.next_publish_time}")
+        print(f"Next publish time: {self.next_publish_time}")
 
         self.filtered_dof_target = self.filtered_dof_target * 0.8 + self.dof_target * 0.2
 
@@ -218,9 +223,15 @@ class Controller(Node):
             )
             self.low_cmd.motor_cmd[i].kp = 0.0
 
+        # zeros for now
+        for i in range(B1JointCnt):
+            self.low_cmd.motor_cmd[i].q = 0.0
+
+
         start_time = time.perf_counter()
         self._send_cmd(self.low_cmd)
         publish_time = time.perf_counter()
+        print(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
         self.logger.debug(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
         time.sleep(0.001)
 
