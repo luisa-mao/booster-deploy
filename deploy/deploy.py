@@ -203,7 +203,7 @@ class Controller(Node):
         time_now = self.timer.get_time()
         if time_now < self.next_publish_time:
             time.sleep(0.001)
-            continue
+            return
         self.next_publish_time += self.cfg["common"]["dt"]
         self.logger.debug(f"Next publish time: {self.next_publish_time}")
         print(f"Next publish time: {self.next_publish_time}")
@@ -291,7 +291,7 @@ if __name__ == "__main__":
         controller.start_rl_gait_conditionally()
 
         # Use rclpy.spin() to handle ROS2 callbacks while checking controller state
-        while controller.running and not controller.shutdown_requested:
+        while controller.running: # and not controller.shutdown_requested:
             try:
                 rclpy.spin_once(controller, timeout_sec=0.1)
                 time.sleep(min(controller.cfg["common"]["dt"], 0.1))

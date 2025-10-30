@@ -36,7 +36,7 @@ common:
 policy:
   policy_path: "./models/target_position.pt"
   num_actions: 12
-  num_observations: 47
+  num_observations: 46
   gait_frequency: 1.0
 
   normalization:
