@@ -225,124 +225,61 @@ class Controller(Node):
         self.cleanup()
 
 
-# if __name__ == "__main__":
-#     import argparse
-#     import signal
-#     import sys
-#     import os
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--config", required=True, type=str, help="Name of the configuration file.")
-#     parser.add_argument("--net", type=str, default="127.0.0.1", help="Network interface for SDK communication.")
-#     args = parser.parse_args()
-#     cfg_file = os.path.join("configs", args.config)
-
-#     print(f"Starting custom controller, connecting to {args.net} ...")
-#     ChannelFactory.Instance().Init(0, args.net)
-
-#     # 1️⃣ Initialize ROS 2
-#     rclpy.init()
-
-#     try:
-#         controller = Controller(cfg_file)
-#         time.sleep(2)
-#         print("Initialization complete.")
-#         controller.start_custom_mode_conditionally()
-#         controller.start_rl_gait_conditionally()
-
-#         # 2️⃣ Spin the node (so subscriptions/timers actually run)
-#         executor = MultiThreadedExecutor()
-#         executor.add_node(controller)
-
-#         while controller.running and rclpy.ok():
-#             controller.run()
-#             executor.spin_once(timeout_sec=0.1)
-
-#     except KeyboardInterrupt:
-#         print("\nKeyboard interrupt received. Cleaning up...")
-#         controller.cleanup()
-
-#     finally:
-#         # 3️⃣ Proper shutdown
-#         controller.destroy_node()
-#         rclpy.shutdown()
-
-import argparse
-import os
-import sys
-import time
-import yaml
-import signal
-import rclpy
-from some_sdk import ChannelFactory, RobotMode  # replace with your actual imports
-from controller_module import Controller       # replace with your Controller import
-
-def main():
-    # --- Graceful shutdown handler ---
-    def signal_handler(sig, frame):
-        print("\n[CTRL+C] Shutting down...")
-        if controller is not None:
-            controller.cleanup()
-        rclpy.shutdown()
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-
-    # --- Parse arguments ---
+if __name__ == "__main__":
+    import argparse
+    import signal
+    import sys
+    import os
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True, type=str, help="Path to YAML configuration file.")
+    parser.add_argument("--config", required=True, type=str, help="Name of the configuration file.")
     parser.add_argument("--net", type=str, default="127.0.0.1", help="Network interface for SDK communication.")
-    parser.add_argument("--policy_path", type=str, default=None, help="Optional override for policy path.")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode.")
     args = parser.parse_args()
+    cfg_file = os.path.join("configs", args.config)
 
-    # --- Load configuration ---
-    with open(args.config, "r", encoding="utf-8") as f:
-        cfg = yaml.load(f, Loader=yaml.FullLoader)
-
-    if args.policy_path:
-        cfg["policy"]["policy_path"] = args.policy_path
-        print(f"[INFO] Using policy file: {args.policy_path}")
-
-    # --- Initialize SDK communication ---
-    print(f"[INFO] Starting custom controller, connecting to {args.net} ...")
+    print(f"Starting custom controller, connecting to {args.net} ...")
     ChannelFactory.Instance().Init(0, args.net)
 
-    controller = None
+    # 1️⃣ Initialize ROS 2
+    rclpy.init()
+
+    # try:
+    #     controller = Controller(cfg_file)
+    #     time.sleep(2)
+    #     print("Initialization complete.")
+    #     controller.start_custom_mode_conditionally()
+    #     controller.start_rl_gait_conditionally()
+
+    #     # 2️⃣ Spin the node (so subscriptions/timers actually run)
+    #     executor = MultiThreadedExecutor()
+    #     executor.add_node(controller)
+
+    #     while controller.running and rclpy.ok():
+    #         controller.run()
+    #         executor.spin_once(timeout_sec=0.1)
+
+
     try:
-        # --- Initialize ROS 2 ---
         rclpy.init()
-        controller = Controller(cfg, debug=args.debug)
-
-        # --- Wait for channels to initialize ---
-        time.sleep(2)
-        print("[INFO] Initialization complete.")
-
+        controller = Controller(cfg_file, debug=args.debug)
+        
+        time.sleep(2)  # Wait for channels to initialize
+        print("Initialization complete.")
         controller.start_custom_mode_conditionally()
         controller.start_rl_gait_conditionally()
 
-        # --- Main control loop ---
+        # Use rclpy.spin() to handle ROS2 callbacks while checking controller state
         while controller.running and not controller.shutdown_requested:
-            # Process any incoming ROS2 messages/callbacks
-            rclpy.spin_once(controller, timeout_sec=0.1)
-
-            # Run one control step
-            controller.run()
-
-            # Maintain loop timing (don’t oversleep)
-            time.sleep(min(controller.cfg["common"]["dt"], 0.1))
-
-        # --- Clean shutdown ---
-        controller.client.ChangeMode(RobotMode.kDamping)
-        controller.cleanup()
+            try:
+                rclpy.spin_once(controller, timeout_sec=0.1)
+                time.sleep(min(controller.cfg["common"]["dt"], 0.1))
+            except KeyboardInterrupt:
+                break
 
     except KeyboardInterrupt:
-        print("\n[CTRL+C] Keyboard interrupt received, cleaning up...")
-        if controller is not None:
-            controller.cleanup()
+        print("\nKeyboard interrupt received. Cleaning up...")
+        controller.cleanup()
 
     finally:
+        # 3️⃣ Proper shutdown
+        controller.destroy_node()
         rclpy.shutdown()
-        print("[INFO] Shutdown complete.")
-
-if __name__ == "__main__":
-    main()
