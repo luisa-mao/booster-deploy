@@ -75,6 +75,7 @@ class Controller(Node):
             self.client = B1LocoClient()
 
             self.low_state_subscriber.InitChannel()
+            self.pd_control_runner.InitChannel()
             self.low_cmd_publisher.InitChannel()
             self.client.Init()
 
@@ -172,10 +173,10 @@ class Controller(Node):
             time.sleep(0.001)
             return
         self.logger.debug("-----------------------------------------------------")
-        print("-----------------------------------------------------")
+        # print("-----------------------------------------------------")
         self.next_inference_time += self.policy.get_policy_interval()
         self.logger.debug(f"Next start time: {self.next_inference_time}")
-        print(f"Next start time: {self.next_inference_time}")
+        # print(f"Next start time: {self.next_inference_time}")
         start_time = time.perf_counter()
 
         self.dof_target[:] = self.policy.inference(
@@ -193,7 +194,7 @@ class Controller(Node):
 
         inference_time = time.perf_counter()
         self.logger.debug(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
-        # print(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
+        print(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
         time.sleep(0.001)
 
     def _publish_cmd(self):
@@ -224,14 +225,14 @@ class Controller(Node):
             self.low_cmd.motor_cmd[i].kp = 0.0
 
         # zeros for now
-        for i in range(B1JointCnt):
-            self.low_cmd.motor_cmd[i].q = 0.0
+        # for i in range(B1JointCnt):
+        #     self.low_cmd.motor_cmd[i].q = 0.0
 
 
         start_time = time.perf_counter()
         self._send_cmd(self.low_cmd)
         publish_time = time.perf_counter()
-        # print(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
+        print(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
         self.logger.debug(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
         time.sleep(0.001)
 
