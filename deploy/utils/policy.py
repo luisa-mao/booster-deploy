@@ -47,7 +47,7 @@ class Policy:
 
         n = self.joint_inds.shape[0]
 
-        print("xyz:", self.smoothed_commands[0:3])
+        # print("xyz:", self.smoothed_commands[0:3])
         self.obs[0:3] = projected_gravity * self.cfg["policy"]["normalization"]["gravity"]
         self.obs[3:6] = base_ang_vel * self.cfg["policy"]["normalization"]["ang_vel"]
         # self.obs[6] = (
