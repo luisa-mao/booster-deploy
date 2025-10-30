@@ -243,48 +243,48 @@ if __name__ == "__main__":
     # 1️⃣ Initialize ROS 2
     rclpy.init()
 
-    try:
-        controller = Controller(cfg_file)
-        time.sleep(2)
-        print("Initialization complete.")
-        controller.start_custom_mode_conditionally()
-        controller.start_rl_gait_conditionally()
-
-        # 2️⃣ Spin the node (so subscriptions/timers actually run)
-        executor = MultiThreadedExecutor()
-        executor.add_node(controller)
-
-        while controller.running and rclpy.ok():
-            controller.run()
-            executor.spin_once(timeout_sec=0.1)
-
-
-    finally:
-        # 3️⃣ Proper shutdown
-        controller.destroy_node()
-        rclpy.shutdown()
-
-
-
     # try:
-    #     controller = Controller(cfg_file, debug=args.debug)
-        
-    #     time.sleep(2)  # Wait for channels to initialize
+    #     controller = Controller(cfg_file)
+    #     time.sleep(2)
     #     print("Initialization complete.")
     #     controller.start_custom_mode_conditionally()
     #     controller.start_rl_gait_conditionally()
 
-    #     # Use rclpy.spin() to handle ROS2 callbacks while checking controller state
-    #     while controller.running and not controller.shutdown_requested:
-    #         try:
-    #             rclpy.spin_once(controller, timeout_sec=0.1)
-    #             time.sleep(min(controller.cfg["common"]["dt"], 0.1))
-    #         except KeyboardInterrupt:
-    #             break
+    #     # 2️⃣ Spin the node (so subscriptions/timers actually run)
+    #     executor = MultiThreadedExecutor()
+    #     executor.add_node(controller)
 
-    # except KeyboardInterrupt:
-    #     print("\nKeyboard interrupt received. Cleaning up...")
-    #     controller.cleanup()
+    #     while controller.running and rclpy.ok():
+    #         controller.run()
+    #         executor.spin_once(timeout_sec=0.1)
+
+
+    # finally:
+    #     # 3️⃣ Proper shutdown
+    #     controller.destroy_node()
+    #     rclpy.shutdown()
+
+
+
+    try:
+        controller = Controller(cfg_file, debug=args.debug)
+        
+        time.sleep(2)  # Wait for channels to initialize
+        print("Initialization complete.")
+        controller.start_custom_mode_conditionally()
+        controller.start_rl_gait_conditionally()
+
+        # Use rclpy.spin() to handle ROS2 callbacks while checking controller state
+        while controller.running and not controller.shutdown_requested:
+            try:
+                rclpy.spin_once(controller, timeout_sec=0.1)
+                time.sleep(min(controller.cfg["common"]["dt"], 0.1))
+            except KeyboardInterrupt:
+                break
+
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt received. Cleaning up...")
+        controller.cleanup()
 
     # node = Controller(cfg_file)
 
