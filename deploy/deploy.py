@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
 
     try:
-        controller = Controller(cfg_file, debug=args.debug)
+        controller = Controller(cfg_file)
         
         time.sleep(2)  # Wait for channels to initialize
         print("Initialization complete.")
