@@ -70,6 +70,7 @@ class Controller(Node):
         try:
             self.low_cmd = LowCmd()
             self.low_state_subscriber = B1LowStateSubscriber(self._low_state_handler)
+            self.pd_control_runner = B1LowStateSubscriber(self._publish_cmd)
             self.low_cmd_publisher = B1LowCmdPublisher()
             self.client = B1LocoClient()
 
@@ -116,6 +117,8 @@ class Controller(Node):
                 self.dof_pos[i] = motor.q
                 self.dof_vel[i] = motor.dq
 
+        self.run()
+
     def _send_cmd(self, cmd: LowCmd):
         self.low_cmd_publisher.Write(cmd)
 
@@ -157,9 +160,9 @@ class Controller(Node):
         self._send_cmd(self.low_cmd)
         self.next_inference_time = self.timer.get_time()
         self.next_publish_time = self.timer.get_time()
-        self.publish_runner = threading.Thread(target=self._publish_cmd)
-        self.publish_runner.daemon = True
-        self.publish_runner.start()
+        # self.publish_runner = threading.Thread(target=self._publish_cmd)
+        # self.publish_runner.daemon = True
+        # self.publish_runner.start()
         print(f"{self.remoteControlService.get_operation_hint()}")
 
     def run(self):
@@ -190,34 +193,36 @@ class Controller(Node):
         time.sleep(0.001)
 
     def _publish_cmd(self):
-        while self.running:
-            time_now = self.timer.get_time()
-            if time_now < self.next_publish_time:
-                time.sleep(0.001)
-                continue
-            self.next_publish_time += self.cfg["common"]["dt"]
-            self.logger.debug(f"Next publish time: {self.next_publish_time}")
-
-            self.filtered_dof_target = self.filtered_dof_target * 0.8 + self.dof_target * 0.2
-
-            for i in range(B1JointCnt):
-                self.low_cmd.motor_cmd[i].q = self.filtered_dof_target[i]
-
-            # Use series-parallel conversion for torque to avoid non-linearity
-            for i in self.cfg["mech"]["parallel_mech_indexes"]:
-                self.low_cmd.motor_cmd[i].q = self.dof_pos_latest[i]
-                self.low_cmd.motor_cmd[i].tau = np.clip(
-                    (self.filtered_dof_target[i] - self.dof_pos_latest[i]) * self.cfg["common"]["stiffness"][i],
-                    -self.cfg["common"]["torque_limit"][i],
-                    self.cfg["common"]["torque_limit"][i],
-                )
-                self.low_cmd.motor_cmd[i].kp = 0.0
-
-            start_time = time.perf_counter()
-            self._send_cmd(self.low_cmd)
-            publish_time = time.perf_counter()
-            self.logger.debug(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
+        # while self.running:
+        if not self.running:
+            return
+        time_now = self.timer.get_time()
+        if time_now < self.next_publish_time:
             time.sleep(0.001)
+            continue
+        self.next_publish_time += self.cfg["common"]["dt"]
+        self.logger.debug(f"Next publish time: {self.next_publish_time}")
+
+        self.filtered_dof_target = self.filtered_dof_target * 0.8 + self.dof_target * 0.2
+
+        for i in range(B1JointCnt):
+            self.low_cmd.motor_cmd[i].q = self.filtered_dof_target[i]
+
+        # Use series-parallel conversion for torque to avoid non-linearity
+        for i in self.cfg["mech"]["parallel_mech_indexes"]:
+            self.low_cmd.motor_cmd[i].q = self.dof_pos_latest[i]
+            self.low_cmd.motor_cmd[i].tau = np.clip(
+                (self.filtered_dof_target[i] - self.dof_pos_latest[i]) * self.cfg["common"]["stiffness"][i],
+                -self.cfg["common"]["torque_limit"][i],
+                self.cfg["common"]["torque_limit"][i],
+            )
+            self.low_cmd.motor_cmd[i].kp = 0.0
+
+        start_time = time.perf_counter()
+        self._send_cmd(self.low_cmd)
+        publish_time = time.perf_counter()
+        self.logger.debug(f"Publish took {(publish_time - start_time)*1000:.4f} ms")
+        time.sleep(0.001)
 
     def __enter__(self) -> "Controller":
         return self
