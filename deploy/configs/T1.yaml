@@ -34,7 +34,7 @@ common:
   ]
 
 policy:
-  policy_path: "./models/target_position.pt"
+  policy_path: "./models/target_pos_slow_269.pt"
   num_actions: 12
   num_observations: 46
   gait_frequency: 1.0

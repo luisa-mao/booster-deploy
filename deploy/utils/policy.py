@@ -59,8 +59,8 @@ class Policy:
         # self.obs[8] = (
         #     self.smoothed_commands[2] * self.cfg["policy"]["normalization"]["ang_vel"] * (self.gait_frequency > 1.0e-8)
         # )
-        self.obs[6] = target_x
-        self.obs[7] = target_y
+        self.obs[6] = 0.5 # target_x
+        self.obs[7] = 0 # target_y
         self.obs[8] = np.cos(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
         self.obs[9] = np.sin(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
         self.obs[10:10+n] = (dof_pos - self.default_dof_pos)[self.joint_inds] * self.cfg["policy"]["normalization"]["dof_pos"]
