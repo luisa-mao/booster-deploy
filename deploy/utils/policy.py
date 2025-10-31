@@ -31,7 +31,7 @@ class Policy:
         self.actions = np.zeros(self.cfg["policy"]["num_actions"], dtype=np.float32)
         self.policy_interval = self.cfg["common"]["dt"] * self.cfg["policy"]["control"]["decimation"]
 
-    def inference(self, time_now, dof_pos, dof_vel, base_ang_vel, projected_gravity, vx, vy, vyaw):
+    def inference(self, time_now, dof_pos, dof_vel, base_ang_vel, projected_gravity, vx, vy, vyaw, target_pos_x, target_pos_y):
         self.gait_process = np.fmod(time_now * self.gait_frequency, 1.0)
         self.commands[0] = vx
         self.commands[1] = vy
@@ -57,8 +57,8 @@ class Policy:
         # self.obs[8] = (
         #     self.smoothed_commands[2] * self.cfg["policy"]["normalization"]["ang_vel"] * (self.gait_frequency > 1.0e-8)
         # )
-        self.obs[6] = 0.5
-        self.obs[7] = 0.0
+        self.obs[6] = target_pos_x
+        self.obs[7] = target_pos_y
         self.obs[8] = np.cos(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
         self.obs[9] = np.sin(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
         self.obs[10:10+n] = (dof_pos - self.default_dof_pos)[11:] * self.cfg["policy"]["normalization"]["dof_pos"]

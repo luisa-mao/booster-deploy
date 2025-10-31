@@ -94,7 +94,7 @@ class Controller(Node):
             raise
 
     def _target_pos_callback(self, ball_msg: Point):
-        self.target_pos[:2] = np.array([ball_msg.x, ball_msg.y], dtype=np.float32)
+        self.target_pos[:2] = np.array([ball_msg.z, -ball_msg.x], dtype=np.float32)
         self.target_pos_detected = True
         print(f"Target position updated: {self.target_pos[:2]}")
 
@@ -184,6 +184,8 @@ class Controller(Node):
             vx=self.remoteControlService.get_vx_cmd(),
             vy=self.remoteControlService.get_vy_cmd(),
             vyaw=self.remoteControlService.get_vyaw_cmd(),
+            target_pos_x = self.target_pos[0] if self.target_pos_detected else 0.0,
+            target_pos_y = self.target_pos[1] if self.target_pos_detected else 0.0,
         )
 
         inference_time = time.perf_counter()
