@@ -226,6 +226,8 @@ class Controller(Node):
     def __exit__(self, *args) -> None:
         self.cleanup()
 
+def ros_spin_thread(node):
+    rclpy.spin(node)
 
 if __name__ == "__main__":
     import argparse
@@ -250,20 +252,25 @@ if __name__ == "__main__":
 
     rclpy.init()
 
-    with Controller(cfg_file) as controller:
-        time.sleep(2)  # Wait for channels to initialize
-        print("Initialization complete.")
-        controller.start_custom_mode_conditionally()
-        controller.start_rl_gait_conditionally()
+    controller = Controller(cfg_file)
+    time.sleep(2)  # Wait for channels to initialize
+    print("Initialization complete.")
+    controller.start_custom_mode_conditionally()
+    controller.start_rl_gait_conditionally()
 
-        try:
-            while controller.running:
-                controller.run()
-                time.sleep(0.001)
-            controller.client.ChangeMode(RobotMode.kDamping)
-        except KeyboardInterrupt:
-            print("\nKeyboard interrupt received. Cleaning up...")
-            controller.cleanup()
+    # Start ROS spinning in another thread
+    spin_thread = threading.Thread(target=ros_spin_thread, args=(controller,), daemon=True)
+    spin_thread.start()
 
-        finally:
-            rclpy.shutdown()
+    try:
+        while controller.running:
+            # rclpy.spin_once(controller, timeout_sec=0.0)
+            controller.run()
+            time.sleep(0.001)
+        controller.client.ChangeMode(RobotMode.kDamping)
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt received. Cleaning up...")
+        controller.cleanup()
+
+    finally:
+        rclpy.shutdown()
