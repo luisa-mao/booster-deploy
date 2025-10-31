@@ -43,24 +43,27 @@ class Policy:
         #     self.gait_frequency = 0.0
         #else:
         self.gait_frequency = self.cfg["policy"]["gait_frequency"]
+        n = self.cfg["policy"]["num_actions"]
 
         print("xyz:", self.smoothed_commands[0:3])
         self.obs[0:3] = projected_gravity * self.cfg["policy"]["normalization"]["gravity"]
         self.obs[3:6] = base_ang_vel * self.cfg["policy"]["normalization"]["ang_vel"]
-        self.obs[6] = (
-            self.smoothed_commands[0] * self.cfg["policy"]["normalization"]["lin_vel"] * (self.gait_frequency > 1.0e-8)
-            )
-        self.obs[7] = (
-            self.smoothed_commands[1] * self.cfg["policy"]["normalization"]["lin_vel"] * (self.gait_frequency > 1.0e-8)
-        )
-        self.obs[8] = (
-            self.smoothed_commands[2] * self.cfg["policy"]["normalization"]["ang_vel"] * (self.gait_frequency > 1.0e-8)
-        )
-        self.obs[9] = np.cos(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
-        self.obs[10] = np.sin(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
-        self.obs[11:23] = (dof_pos - self.default_dof_pos)[11:] * self.cfg["policy"]["normalization"]["dof_pos"]
-        self.obs[23:35] = dof_vel[11:] * self.cfg["policy"]["normalization"]["dof_vel"]
-        self.obs[35:47] = self.actions
+        # self.obs[6] = (
+        #     self.smoothed_commands[0] * self.cfg["policy"]["normalization"]["lin_vel"] * (self.gait_frequency > 1.0e-8)
+        #     )
+        # self.obs[7] = (
+        #     self.smoothed_commands[1] * self.cfg["policy"]["normalization"]["lin_vel"] * (self.gait_frequency > 1.0e-8)
+        # )
+        # self.obs[8] = (
+        #     self.smoothed_commands[2] * self.cfg["policy"]["normalization"]["ang_vel"] * (self.gait_frequency > 1.0e-8)
+        # )
+        self.obs[6] = 0.5
+        self.obs[7] = 0.0
+        self.obs[8] = np.cos(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
+        self.obs[9] = np.sin(2 * np.pi * self.gait_process) * (self.gait_frequency > 1.0e-8)
+        self.obs[10:10+n] = (dof_pos - self.default_dof_pos)[11:] * self.cfg["policy"]["normalization"]["dof_pos"]
+        self.obs[10+n:10+2*n] = dof_vel[11:] * self.cfg["policy"]["normalization"]["dof_vel"]
+        self.obs[10+2*n:10+3*n] = self.actions
 
         self.actions[:] = self.policy(torch.from_numpy(self.obs).unsqueeze(0)).detach().numpy()
         self.actions[:] = np.clip(
