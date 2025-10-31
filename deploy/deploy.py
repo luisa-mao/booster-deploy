@@ -21,12 +21,23 @@ from utils.rotate import rotate_vector_inverse_rpy
 from utils.timer import TimerConfig, Timer
 from utils.policy import Policy
 
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import Point, PoseStamped
 
-class Controller:
+
+
+class Controller(Node):
     def __init__(self, cfg_file) -> None:
+        super().__init__('controller')
+
         # Setup logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
+
+        # ros2 stuff
+        self.target_pos = np.array([0.0, 0.0], dtype=np.float32)
+        self.target_pos_detected = False
 
         # Load config
         with open(cfg_file, "r", encoding="utf-8") as f:
@@ -69,9 +80,24 @@ class Controller:
             self.low_state_subscriber.InitChannel()
             self.low_cmd_publisher.InitChannel()
             self.client.Init()
+
+            # ros subscribers
+            self._target_pos = self.create_subscription(
+                        Point,
+                        "/apriltag/info",
+                        self._target_pos_callback,
+                        10
+                    )
+
         except Exception as e:
             self.logger.error(f"Failed to initialize communication: {e}")
             raise
+
+    def _target_pos_callback(self, ball_msg: Point):
+        self.target_pos[:2] = np.array([ball_msg.x, ball_msg.y], dtype=np.float32)
+        self.target_pos_detected = True
+        print(f"Target position updated: {self.target_pos[:2]}")
+
 
     def _low_state_handler(self, low_state_msg: LowState):
         if abs(low_state_msg.imu_state.rpy[0]) > 1.0 or abs(low_state_msg.imu_state.rpy[1]) > 1.0:
@@ -162,7 +188,7 @@ class Controller:
 
         inference_time = time.perf_counter()
         self.logger.debug(f"Inference took {(inference_time - start_time)*1000:.4f} ms")
-        time.sleep(0.001)
+        # time.sleep(0.001)
 
     def _publish_cmd(self):
         while self.running:
@@ -222,6 +248,8 @@ if __name__ == "__main__":
     print(f"Starting custom controller, connecting to {args.net} ...")
     ChannelFactory.Instance().Init(0, args.net)
 
+    rclpy.init()
+
     with Controller(cfg_file) as controller:
         time.sleep(2)  # Wait for channels to initialize
         print("Initialization complete.")
@@ -231,7 +259,11 @@ if __name__ == "__main__":
         try:
             while controller.running:
                 controller.run()
+                time.sleep(0.001)
             controller.client.ChangeMode(RobotMode.kDamping)
         except KeyboardInterrupt:
             print("\nKeyboard interrupt received. Cleaning up...")
             controller.cleanup()
+
+        finally:
+            rclpy.shutdown()
